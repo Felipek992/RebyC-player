@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Player</title>
+    <link href="https://vjs.zencdn.net/7.15.4/video-js.css" rel="stylesheet" />
+    <link rel="stylesheet" href="cyberpunk.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>RebyC Player</h1>
+        </header>
+        <input type="text" id="iptvUrl" placeholder="Enter IPTV URL">
+        <button id="loadPlaylist">Load Playlist</button>
+        <input type="file" id="iptvFile" accept=".m3u">
+        <button id="loadFilePlaylist">Load Playlist from File</button>
+        <input type="text" id="searchInput" placeholder="Search Channels">
+        <button id="showFavorites">Show Favorites</button>
+        <button id="showHistory">Show History</button>
+        <ul id="channelList"></ul>
+        <div id="videoContainer">
+            <video-js id="videoPlayer" class="vjs-default-skin" controls preload="auto"></video-js>
+            <button id="closePlayer">Close Player</button>
+        </div>
+        <div id="loadingSpinner"></div>
+    </div>
+    <script src="https://vjs.zencdn.net/7.15.4/video.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
