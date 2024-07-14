@@ -1,32 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IPTV Player</title>
-    <link href="https://vjs.zencdn.net/7.15.4/video-js.css" rel="stylesheet" />
-    <link rel="stylesheet" href="cyberpunk.css">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>RebyC Player</h1>
-        </header>
-        <input type="text" id="iptvUrl" placeholder="Enter IPTV URL">
-        <button id="loadPlaylist">Load Playlist</button>
-        <input type="file" id="iptvFile" accept=".m3u">
-        <button id="loadFilePlaylist">Load Playlist from File</button>
-        <input type="text" id="searchInput" placeholder="Search Channels">
-        <button id="showFavorites">Show Favorites</button>
-        <button id="showHistory">Show History</button>
-        <ul id="channelList"></ul>
-        <div id="videoContainer">
-            <video-js id="videoPlayer" class="vjs-default-skin" controls preload="auto"></video-js>
-            <button id="closePlayer">Close Player</button>
+    <div id="app">
+        <div id="playlistContainer">
+            <h1>IPTV Player</h1>
+            <input type="text" id="iptvUrl" placeholder="Enter IPTV URL">
+            <button id="loadPlaylist"><i class="fas fa-cloud-download-alt"></i> Load Playlist</button>
+            <input type="file" id="iptvFile" style="display: none;">
+            <button id="loadFile"><i class="fas fa-file-upload"></i> Load File</button>
+            <input type="text" id="channelSearch" placeholder="Search Channel">
+            <button id="clearPlaylist"><i class="fas fa-trash-alt"></i> Clear Playlist</button>
+            <ul id="channelList"></ul>
+            <button id="toggleDarkMode"><i class="fas fa-moon"></i> Toggle Dark Mode</button>
         </div>
-        <div id="loadingSpinner"></div>
+        <div id="videoContainer">
+            <video-js id="videoPlayer" class="vjs-default-skin" controls preload="auto" width="640" height="264">
+                <source id="videoSource" src="" type="application/x-mpegURL">
+            </video-js>
+            <button id="closePlayer"><i class="fas fa-times"></i> Close Player</button>
+            <button id="fullscreenToggle"><i class="fas fa-expand"></i></button>
+            <button id="addFavorite"><i class="fas fa-star"></i> Add to Favorites</button>
+            <button id="removeFavorite" style="display:none;"><i class="fas fa-star"></i> Remove from Favorites</button>
+        </div>
     </div>
-    <script src="https://vjs.zencdn.net/7.15.4/video.min.js"></script>
+    <div id="toast"></div>
+    <div id="loadingSpinner"></div>
+    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
