@@ -1,205 +1,295 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Elementos da interface
-    const iptvUrlInput = document.getElementById('iptvUrl');
+document.addEventListener('DOMContentLoaded', function () {
     const loadPlaylistButton = document.getElementById('loadPlaylist');
-    const iptvFileInput = document.getElementById('iptvFile');
-    const loadFilePlaylistButton = document.getElementById('loadFilePlaylist');
-    const channelListElement = document.getElementById('channelList');
+    const iptvUrlInput = document.getElementById('iptvUrl');
+    const channelList = document.getElementById('channelList');
     const videoContainer = document.getElementById('videoContainer');
-    const videoPlayerElement = document.getElementById('videoPlayer');
+    const videoPlayer = videojs('videoPlayer');
+    const videoSource = document.getElementById('videoSource');
     const closePlayerButton = document.getElementById('closePlayer');
-    const searchInput = document.getElementById('searchInput');
     const loadingSpinner = document.getElementById('loadingSpinner');
-    const showFavoritesButton = document.getElementById('showFavorites');
-    const showHistoryButton = document.getElementById('showHistory');
+    const loadFileButton = document.getElementById('loadFile');
+    const iptvFileInput = document.getElementById('iptvFile');
+    const channelSearch = document.getElementById('channelSearch');
+    const fullscreenToggle = document.getElementById('fullscreenToggle');
+    const clearPlaylistButton = document.getElementById('clearPlaylist');
+    const addFavoriteButton = document.getElementById('addFavorite');
+    const removeFavoriteButton = document.getElementById('removeFavorite');
+    const toggleDarkModeButton = document.getElementById('toggleDarkMode');
+    const toast = document.getElementById('toast');
 
-    const player = videojs(videoPlayerElement);
+    const FAVORITES_KEY = 'favorites';
+    const LAST_PLAYLIST_KEY = 'lastPlaylist';
+    const LAST_PLAYED_KEY = 'lastPlayed';
+    let currentChannel = null;
 
-    // Eventos
-    loadPlaylistButton.addEventListener('click', handleUrlSubmit);
-    loadFilePlaylistButton.addEventListener('click', handleFileSubmit);
-    closePlayerButton.addEventListener('click', closePlayer);
-    searchInput.addEventListener('input', filterChannels);
-    showFavoritesButton.addEventListener('click', showFavorites);
-    showHistoryButton.addEventListener('click', showHistory);
+    function showLoadingSpinner() {
+        loadingSpinner.style.display = 'block';
+    }
 
-    // Função para carregar a playlist da URL
-    function handleUrlSubmit() {
-        const url = iptvUrlInput.value.trim();
-        if (url) {
-            localStorage.setItem('lastPlaylistUrl', url);
-            loadingSpinner.style.display = 'block';
+    function hideLoadingSpinner() {
+        loadingSpinner.style.display = 'none';
+    }
 
-            fetch('loadPlaylist.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({ 'url': url })
-            })
-            .then(response => response.json())
-            .then(data => {
-                loadingSpinner.style.display = 'none';
-                if (data.success) {
-                    localStorage.setItem('cachedPlaylist', data.content);
-                    const channels = parseM3U(data.content);
-                    displayChannels(channels);
-                } else {
-                    console.error('Error:', data.error);
-                    alert(data.message + (data.error ? ' Details: ' + data.error : ''));
-                }
-            })
-            .catch(error => {
-                loadingSpinner.style.display = 'none';
-                console.error('Error fetching playlist:', error);
-                alert('Erro ao carregar a playlist. Verifique a URL e tente novamente.');
-            });
+    function showPlayer() {
+        videoContainer.classList.add('show');
+    }
+
+    function closePlayer() {
+        videoContainer.classList.remove('show');
+        videoPlayer.pause();
+    }
+
+    function saveToLocalStorage(key, data) {
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function loadFromLocalStorage(key) {
+        return JSON.parse(localStorage.getItem(key));
+    }
+
+    function showToast(message) {
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 3000);
+    }
+
+    async function loadPlaylist(url) {
+        try {
+            showLoadingSpinner();
+            let playlist;
+            const cachedPlaylist = loadFromLocalStorage(url);
+            if (cachedPlaylist) {
+                playlist = cachedPlaylist;
+            } else {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const m3uContent = await response.text();
+                playlist = parseM3U(m3uContent);
+                saveToLocalStorage(url, playlist);
+            }
+            displayChannels(playlist);
+            saveToLocalStorage(LAST_PLAYLIST_KEY, url);
+            showToast('Playlist loaded successfully!');
+        } catch (error) {
+            showToast(`Failed to fetch playlist from the URL. Details: ${error.message}`);
+        } finally {
+            hideLoadingSpinner();
         }
     }
 
-    // Função para carregar a playlist do arquivo
-    function handleFileSubmit() {
-        const file = iptvFileInput.files[0];
+    function displayChannels(playlist) {
+        channelList.innerHTML = '';
+        playlist.forEach(channel => {
+            const li = document.createElement('li');
+            li.textContent = channel.name;
+            li.addEventListener('click', () => {
+                currentChannel = channel;
+                videoSource.src = channel.url;
+                videoPlayer.src({ type: 'application/x-mpegURL', src: channel.url });
+                showPlayer();
+                videoPlayer.play();
+                saveToLocalStorage(LAST_PLAYED_KEY, channel);
+                updateFavoriteButton();
+            });
+            channelList.appendChild(li);
+        });
+    }
+
+    function loadFavorites() {
+        const favorites = loadFromLocalStorage(FAVORITES_KEY) || [];
+        favorites.forEach(channel => {
+            const li = document.createElement('li');
+            li.textContent = channel.name;
+            li.addEventListener('click', () => {
+                currentChannel = channel;
+                videoSource.src = channel.url;
+                videoPlayer.src({ type: 'application/x-mpegURL', src: channel.url });
+                showPlayer();
+                videoPlayer.play();
+                saveToLocalStorage(LAST_PLAYED_KEY, channel);
+                updateFavoriteButton();
+            });
+            channelList.appendChild(li);
+        });
+    }
+
+    function addChannelToFavorites() {
+        if (currentChannel) {
+            const favorites = loadFromLocalStorage(FAVORITES_KEY) || [];
+            if (!favorites.some(channel => channel.url === currentChannel.url)) {
+                favorites.push(currentChannel);
+                saveToLocalStorage(FAVORITES_KEY, favorites);
+                showToast(`${currentChannel.name} added to favorites!`);
+            } else {
+                showToast(`${currentChannel.name} is already in favorites!`);
+            }
+            updateFavoriteButton();
+        }
+    }
+
+    function removeChannelFromFavorites() {
+        if (currentChannel) {
+            let favorites = loadFromLocalStorage(FAVORITES_KEY) || [];
+            favorites = favorites.filter(channel => channel.url !== currentChannel.url);
+            saveToLocalStorage(FAVORITES_KEY, favorites);
+            showToast(`${currentChannel.name} removed from favorites!`);
+            updateFavoriteButton();
+        }
+    }
+
+    function updateFavoriteButton() {
+        const favorites = loadFromLocalStorage(FAVORITES_KEY) || [];
+        if (currentChannel && favorites.some(channel => channel.url === currentChannel.url)) {
+            addFavoriteButton.style.display = 'none';
+            removeFavoriteButton.style.display = 'block';
+        } else {
+            addFavoriteButton.style.display = 'block';
+            removeFavoriteButton.style.display = 'none';
+        }
+    }
+
+    loadPlaylistButton.addEventListener('click', () => {
+        const url = iptvUrlInput.value.trim();
+        if (url) {
+            loadPlaylist(url);
+        } else {
+            showToast('Please enter a valid IPTV URL');
+        }
+    });
+
+    loadFileButton.addEventListener('click', () => {
+        iptvFileInput.click();
+    });
+
+    iptvFileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (e) => {
                 const content = e.target.result;
-                localStorage.setItem('cachedPlaylist', content);
-                const channels = parseM3U(content);
-                displayChannels(channels);
+                const playlist = parseM3U(content);
+                displayChannels(playlist);
+                saveToLocalStorage(LAST_PLAYLIST_KEY, URL.createObjectURL(file));
+                showToast('Playlist loaded from file successfully!');
             };
             reader.readAsText(file);
         }
-    }
+    });
 
-    // Função para analisar o arquivo M3U
-    function parseM3U(content) {
-        const lines = content.split('\n').map(line => line.trim());
+    clearPlaylistButton.addEventListener('click', () => {
+        channelList.innerHTML = '';
+        localStorage.removeItem(LAST_PLAYLIST_KEY);
+        showToast('Playlist cleared!');
+    });
+
+    closePlayerButton.addEventListener('click', closePlayer);
+
+    channelSearch.addEventListener('input', (event) => {
+        const searchTerm = event.target.value.toLowerCase();
+        const channels = Array.from(channelList.children);
+        channels.forEach(channel => {
+            if (channel.textContent.toLowerCase().includes(searchTerm)) {
+                channel.style.display = '';
+            } else {
+                channel.style.display = 'none';
+            }
+        });
+    });
+
+    fullscreenToggle.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            videoContainer.requestFullscreen().catch(err => {
+                showToast(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    addFavoriteButton.addEventListener('click', addChannelToFavorites);
+    removeFavoriteButton.addEventListener('click', removeChannelFromFavorites);
+
+    toggleDarkModeButton.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        saveToLocalStorage('darkMode', document.body.classList.contains('dark-mode'));
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (videoContainer.classList.contains('show')) {
+            switch (event.key) {
+                case 'ArrowLeft':
+                    videoPlayer.currentTime(videoPlayer.currentTime() - 10);
+                    break;
+                case 'ArrowRight':
+                    videoPlayer.currentTime(videoPlayer.currentTime() + 10);
+                    break;
+                case 'ArrowUp':
+                    videoPlayer.volume(Math.min(videoPlayer.volume() + 0.1, 1));
+                    break;
+                case 'ArrowDown':
+                    videoPlayer.volume(Math.max(videoPlayer.volume() - 0.1, 0));
+                    break;
+                case ' ':
+                    togglePlayPause();
+                    break;
+                case 'Escape':
+                    closePlayer();
+                    break;
+            }
+        }
+    });
+
+    function parseM3U(data) {
+        const lines = data.split('\n');
         const channels = [];
         let currentChannel = {};
-
         lines.forEach(line => {
+            line = line.trim();
             if (line.startsWith('#EXTINF')) {
-                const parts = line.split(',');
-                currentChannel.name = parts[1];
-            } else if (line.startsWith('http')) {
+                const nameMatch = line.match(/,(.+)$/);
+                if (nameMatch) {
+                    currentChannel.name = nameMatch[1];
+                }
+            } else if (line && !line.startsWith('#')) {
                 currentChannel.url = line;
                 channels.push(currentChannel);
                 currentChannel = {};
             }
         });
-
         return channels;
     }
 
-    // Função para exibir os canais com lazy loading
-    function displayChannels(channels) {
-        channelListElement.innerHTML = '';
-
-        const channelBatchSize = 50; // Ajustar o tamanho do lote conforme necessário
-        let currentBatch = 0;
-
-        function loadNextBatch() {
-            const start = currentBatch * channelBatchSize;
-            const end = start + channelBatchSize;
-            const batch = channels.slice(start, end);
-
-            batch.forEach(channel => {
-                const li = document.createElement('li');
-                li.textContent = channel.name;
-                li.dataset.url = channel.url;
-                li.addEventListener('click', () => playChannel(channel.url, channel.name));
-
-                const favButton = document.createElement('button');
-                favButton.className = 'favButton';
-                favButton.innerHTML = '★';
-                favButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleFavorite(channel);
-                });
-
-                li.appendChild(favButton);
-                channelListElement.appendChild(li);
-            });
-
-            currentBatch++;
-        }
-
-        loadNextBatch();
-        channelListElement.addEventListener('scroll', () => {
-            if (channelListElement.scrollTop + channelListElement.clientHeight >= channelListElement.scrollHeight) {
-                loadNextBatch();
-            }
-        });
-    }
-
-    // Função para tocar um canal
-    function playChannel(url, name) {
-        player.src({ type: 'application/x-mpegURL', src: url });
-        player.play();
-        videoContainer.classList.add('show');
-
-        // Atualizar histórico
-        let history = JSON.parse(localStorage.getItem('channelHistory')) || [];
-        history.push({ name, url, timestamp: new Date() });
-        localStorage.setItem('channelHistory', JSON.stringify(history));
-    }
-
-    // Função para fechar o player
-    function closePlayer() {
-        player.pause();
-        videoContainer.classList.remove('show');
-    }
-
-    // Função para filtrar canais
-    function filterChannels() {
-        const query = searchInput.value.toLowerCase();
-        const items = channelListElement.getElementsByTagName('li');
-        Array.from(items).forEach(item => {
-            const channelName = item.firstChild.textContent.toLowerCase();
-            if (channelName.includes(query)) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-
-    // Função para alternar favoritos
-    function toggleFavorite(channel) {
-        let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-        const exists = favorites.some(fav => fav.url === channel.url);
-
-        if (exists) {
-            favorites = favorites.filter(fav => fav.url !== channel.url);
+    function togglePlayPause() {
+        if (videoPlayer.paused()) {
+            videoPlayer.play();
         } else {
-            favorites.push(channel);
+            videoPlayer.pause();
         }
-
-        localStorage.setItem('favorites', JSON.stringify(favorites));
     }
 
-    // Função para exibir favoritos
-    function showFavorites() {
-        const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-        displayChannels(favorites);
+    const lastPlaylist = loadFromLocalStorage(LAST_PLAYLIST_KEY);
+    if (lastPlaylist) {
+        loadPlaylist(lastPlaylist);
     }
 
-    // Função para exibir histórico
-    function showHistory() {
-        const history = JSON.parse(localStorage.getItem('channelHistory')) || [];
-        displayChannels(history.map(item => ({ name: item.name, url: item.url })));
+    const lastPlayed = loadFromLocalStorage(LAST_PLAYED_KEY);
+    if (lastPlayed) {
+        currentChannel = lastPlayed;
+        videoSource.src = currentChannel.url;
+        videoPlayer.src({ type: 'application/x-mpegURL', src: currentChannel.url });
+        showPlayer();
+        videoPlayer.play();
+        updateFavoriteButton();
     }
 
-    // Carregar a última playlist ou cache
-    document.addEventListener('DOMContentLoaded', () => {
-        const lastPlaylistUrl = localStorage.getItem('lastPlaylistUrl');
-        const cachedPlaylist = localStorage.getItem('cachedPlaylist');
+    const darkMode = loadFromLocalStorage('darkMode');
+    if (darkMode) {
+        document.body.classList.add('dark-mode');
+    }
 
-        if (lastPlaylistUrl && cachedPlaylist) {
-            iptvUrlInput.value = lastPlaylistUrl;
-            const channels = parseM3U(cachedPlaylist);
-            displayChannels(channels);
-        }
-    });
+    loadFavorites();
 });
