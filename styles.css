@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+    color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    transition: background 0.3s ease;
+}
+
+body.dark-mode {
+    background: #121212;
+    color: #bbbbbb;
+}
+
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    box-sizing: border-box;
+    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    transition: background 0.3s ease;
+}
+
+#playlistContainer, #videoContainer {
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+    transition: background 0.3s ease;
+}
+
+body.dark-mode #playlistContainer,
+body.dark-mode #videoContainer {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#playlistContainer h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    color: #f0f0f0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+body.dark-mode #playlistContainer h1 {
+    color: #bbbbbb;
+}
+
+#iptvUrl, #channelSearch, #loadPlaylist, #loadFile, #clearPlaylist, #toggleDarkMode {
+    width: calc(100% - 20px);
+    margin: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    font-size: 1em;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+#iptvUrl, #channelSearch {
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #333;
+}
+
+#loadPlaylist, #loadFile, #clearPlaylist, #toggleDarkMode {
+    background: #ff7e5f;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+body.dark-mode #iptvUrl,
+body.dark-mode #channelSearch {
+    background: rgba(255, 255, 255, 0.2);
+    color: #bbbbbb;
+}
+
+#loadPlaylist:hover, #loadFile:hover, #clearPlaylist:hover, #toggleDarkMode:hover {
+    background: #eb6b4d;
+}
+
+#channelList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#channelList li {
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#channelList li:hover, #channelList li.active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+#videoContainer {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+}
+
+#videoContainer.show {
+    display: flex;
+    opacity: 1;
+}
+
+#closePlayer, #fullscreenToggle, #addFavorite, #removeFavorite {
+    margin-top: 10px;
+    padding: 10px 20px;
+    border: none;
+    background-color: #ff7e5f;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+
+#closePlayer:hover, #fullscreenToggle:hover, #addFavorite:hover, #removeFavorite:hover {
+    background: #eb6b4d;
+}
+
+#fullscreenToggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+#loadingSpinner {
+    display: none;
+    border: 8px solid rgba(255, 255, 255, 0.2);
+    border-top: 8px solid #ffffff;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1001;
+}
